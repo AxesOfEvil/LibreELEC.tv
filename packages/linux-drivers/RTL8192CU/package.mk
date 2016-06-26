@@ -1,6 +1,6 @@
 ################################################################################
 #      This file is part of OpenELEC - http://www.openelec.tv
-#      Copyright (C) 2009-2016 Stephan Raue (stephan@openelec.tv)
+#      Copyright (C) 2009-2014 Stephan Raue (stephan@openelec.tv)
 #
 #  OpenELEC is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -39,7 +39,7 @@ pre_make_target() {
 
 make_target() {
   make V=1 \
-       ARCH=$TARGET_KERNEL_ARCH \
+       ARCH=$TARGET_ARCH \
        KSRC=$(kernel_path) \
        CROSS_COMPILE=$TARGET_PREFIX \
        CONFIG_POWER_SAVING=n

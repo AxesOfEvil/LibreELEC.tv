@@ -1,0 +1,62 @@
+diff -Naur kodi-16.1-c327c53.orig/xbmc/utils/CPUInfo.cpp kodi-16.1-c327c53/xbmc/utils/CPUInfo.cpp
+--- kodi-16.1-c327c53.orig/xbmc/utils/CPUInfo.cpp	2016-06-05 17:59:35.956214233 +0200
++++ kodi-16.1-c327c53/xbmc/utils/CPUInfo.cpp	2016-06-05 18:05:36.000000000 +0200
+@@ -112,13 +112,14 @@
+ #ifdef TARGET_POSIX
+   m_fProcStat = m_fProcTemperature = m_fCPUFreq = NULL;
+   m_cpuInfoForFreq = false;
++  m_procTemperatureDivisor = 1000;  
+ #elif defined(TARGET_WINDOWS)
+   m_cpuQueryFreq = NULL;
+   m_cpuQueryLoad = NULL;
+ #endif
+   m_lastUsedPercentage = 0;
+   m_cpuFeatures = 0;
+-
++  
+ #if defined(TARGET_DARWIN)
+   size_t len = 4;
+   std::string cpuVendor;
+@@ -270,7 +271,13 @@
+   // read from the new location of the temperature data on new kernels, 2.6.39, 3.0 etc
+   if (m_fProcTemperature == NULL)   
+     m_fProcTemperature = fopen("/sys/class/hwmon/hwmon0/temp1_input", "r");
+-  if (m_fProcTemperature == NULL)   
++  if (m_fProcTemperature == NULL) // On (some?) Amlogic based devices
++  {
++    m_fProcTemperature = fopen("/sys/class/thermal/thermal_zone1/temp", "r");
++    if (m_fProcTemperature != NULL)
++      m_procTemperatureDivisor = 1;
++  }
++  if (m_fProcTemperature == NULL)
+     m_fProcTemperature = fopen("/sys/class/thermal/thermal_zone0/temp", "r");  // On Raspberry PIs
+ 
+   m_fCPUFreq = fopen ("/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq", "r");
+@@ -624,7 +631,7 @@
+     if (!ret)
+     {
+       ret = fscanf(m_fProcTemperature, "%d", &value);
+-      value = value / 1000;
++      value = value / m_procTemperatureDivisor;
+       scale = 'c';
+       ret++;
+     }
+diff -Naur kodi-16.1-c327c53.orig/xbmc/utils/CPUInfo.h kodi-16.1-c327c53/xbmc/utils/CPUInfo.h
+--- kodi-16.1-c327c53.orig/xbmc/utils/CPUInfo.h	2016-06-05 17:59:35.956214233 +0200
++++ kodi-16.1-c327c53/xbmc/utils/CPUInfo.h	2016-06-05 18:00:25.000000000 +0200
+@@ -111,6 +111,7 @@
+   FILE* m_fProcTemperature;
+   FILE* m_fCPUFreq;
+   bool m_cpuInfoForFreq;
++  int m_procTemperatureDivisor;  
+ #elif defined(TARGET_WINDOWS)
+   PDH_HQUERY m_cpuQueryFreq;
+   PDH_HQUERY m_cpuQueryLoad;
+@@ -134,7 +135,6 @@
+   unsigned int m_cpuFeatures;
+ 
+   std::map<int, CoreInfo> m_cores;
+-
+ };
+ 
+ extern CCPUInfo g_cpuInfo;

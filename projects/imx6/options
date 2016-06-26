@@ -43,32 +43,27 @@
   # Configuration for u-boot
     UBOOT_CONFIG="mx6_cubox-i_config"
     UBOOT_CONFIG="$UBOOT_CONFIG matrix"
+    UBOOT_CONFIG="$UBOOT_CONFIG udoo_config"
 
   # Target Configfile for u-boot
     UBOOT_CONFIGFILE=""
 
-  # Kernel target
-    KERNEL_TARGET="zImage"
+  # Kernel target for u-boot (default 'uImage' if BOOTLOADER=u-boot) (uImage / zImage)
+    KERNEL_UBOOT_TARGET="zImage"
 
   # Kernel extra targets to build
     KERNEL_UBOOT_EXTRA_TARGET="imx6q-cubox-i.dtb imx6dl-cubox-i.dtb"
     KERNEL_UBOOT_EXTRA_TARGET="$KERNEL_UBOOT_EXTRA_TARGET imx6q-hummingboard.dtb imx6dl-hummingboard.dtb"
-    KERNEL_UBOOT_EXTRA_TARGET="$KERNEL_UBOOT_EXTRA_TARGET imx6q-hummingboard2.dtb imx6dl-hummingboard2.dtb"
     KERNEL_UBOOT_EXTRA_TARGET="$KERNEL_UBOOT_EXTRA_TARGET imx6q-tbs2910.dtb"
     KERNEL_UBOOT_EXTRA_TARGET="$KERNEL_UBOOT_EXTRA_TARGET imx6q-udoo.dtb imx6dl-udoo.dtb"
-    KERNEL_UBOOT_EXTRA_TARGET="$KERNEL_UBOOT_EXTRA_TARGET imx6q-udoo-15lvds.dtb imx6q-udoo-7lvds.dtb"
-    KERNEL_UBOOT_EXTRA_TARGET="$KERNEL_UBOOT_EXTRA_TARGET imx6dl-udoo-15lvds.dtb imx6dl-udoo-7lvds.dtb"
 
   # Additional kernel make parameters (for example to specify the u-boot loadaddress)
     KERNEL_MAKE_EXTRACMD=""
 
-  # Kernel to use.
-  # default is 4.4 from xbian
-    if [ -z "$LINUX_VERSION" -o "$LINUX_VERSION" != "sr-3.14" ]; then
-      LINUX="imx6-4.4-xbian"
-    else
-      LINUX="imx6"
-    fi
+  # Kernel to use. values can be:
+  # default:  default mainline kernel
+    LINUX="imx6"
+
 
 ################################################################################
 # setup build defaults
@@ -100,12 +95,8 @@
   # OpenGL(X) implementation to use (no / mesa)
     OPENGL="no"
 
-  # OpenGL-ES implementation to use (no / bcm2835-driver / imx-gpu-viv)
-  	if [ "$LINUX" = "imx6" ]; then
-      OPENGLES="imx-gpu-viv"
-    else
-      OPENGLES="gpu-viv-bin-mx6q"
-    fi
+  # OpenGL-ES implementation to use (no / bcm2835-driver / gpu-viv-bin-mx6q)
+    OPENGLES="gpu-viv-bin-mx6q"
 
   # include uvesafb support (yes / no)
     UVESAFB_SUPPORT="no"
@@ -124,23 +115,16 @@
   # KODI Player implementation to use (default / bcm2835-driver / libfslvpuwrap)
     KODIPLAYER_DRIVER="libfslvpuwrap"
 
+  # KODI DCADEC support (yes / no)
+    DCADEC_SUPPORT="yes"
+
   # Modules to install in initramfs for early boot
     INITRAMFS_MODULES=""
-
-  # additional drivers to install:
-  # for a list of additional drivers see packages/linux-drivers
-  # Space separated list is supported,
-  # e.g. ADDITIONAL_DRIVERS="DRIVER1 DRIVER2"
-    if [ "$LINUX" = "imx6" ]; then
-      ADDITIONAL_DRIVERS="RTL8192CU RTL8192DU RTL8188EU dvbhdhomerun"
-    else
-      ADDITIONAL_DRIVERS="$ADDITIONAL_DRIVERS"
-    fi
 
   # additional Firmware to use (dvb-firmware, misc-firmware, wlan-firmware)
   # Space separated list is supported,
   # e.g. FIRMWARE="dvb-firmware misc-firmware wlan-firmware"
-    FIRMWARE="misc-firmware wlan-firmware iwlwifi-firmware dvb-firmware brcmfmac_sdio-firmware-imx"
+    FIRMWARE="misc-firmware wlan-firmware iwlwifi-firmware dvb-firmware brcmfmac_sdio-firmware"
 
   # build and install ATV IR remote support (yes / no)
     ATVCLIENT_SUPPORT="no"

@@ -1,0 +1,65 @@
+diff --git a/arch/arm/boot/dts/amlogic/meson8m2_n200_2G.dtd b/arch/arm/boot/dts/amlogic/meson8m2_n200_2G.dtd
+old mode 100755
+new mode 100644
+index 3c6f729..ab005aa
+--- a/arch/arm/boot/dts/amlogic/meson8m2_n200_2G.dtd
++++ b/arch/arm/boot/dts/amlogic/meson8m2_n200_2G.dtd
+@@ -477,7 +477,7 @@ sdio{
+             gpio_dat3 = "CARD_4";
+             jtag_pin = "CARD_0";
+             gpio_cd = "CARD_6";
+-            gpio_ro = "GPIOZ_0";
++//          gpio_ro = "GPIOZ_0";
+             irq_in = <3>;
+             irq_out = <5>;
+             card_type = <5>; /* 0:unknown, 1:mmc card(include eMMC), 2:sd card(include tSD), 3:sdio device(ie:sdio-wifi), 4:SD combo (IO+mem) card, 5:NON sdio device(means sd/mmc card), other:reserved */
+@@ -620,7 +620,7 @@ sdio{
+             f_max = <100000000>;
+             max_req_size = <0x20000>;          /**128KB*/
+             gpio_dat3 = "BOOT_3";
+-            card_type = <1>; /* 0:unknown, 1:mmc card(include eMMC), 2:sd card(include tSD), 3:sdio device(ie:sdio-wifi), 4:SD combo (IO+mem) card, 5:NON sdio device(means sd/mmc card), other:reserved */
++            card_type = <2>; /* 0:unknown, 1:mmc card(include eMMC), 2:sd card(include tSD), 3:sdio device(ie:sdio-wifi), 4:SD combo (IO+mem) card, 5:NON sdio device(means sd/mmc card), other:reserved */
+         };
+ 
+ //$$ DEVICE="sdio"
+@@ -1108,7 +1108,7 @@ sdio{
+     audio_m8_audio{
+         compatible = "amlogic,m8_audio_codec";
+         dev_name = "aml_m8_codec.0";
+-        status = "disable";
++        status = "okay";
+     };
+ 
+ //$$ DEVICE="dummy_codec"
+@@ -1116,14 +1116,14 @@ sdio{
+     dummy_codec{
+         compatible = "amlogic,aml_dummy_codec";
+         dev_name = "dummy_codec.0";
+-        status = "okay";
++        status = "disable";
+     };
+ 
+     aml_audio_codec{
+         compatible = "amlogic,audio_codec";
+           dummy:dummy{
+             codec_name = "dummy_codec";
+-            status = "okay";
++            status = "disable";
+           };
+ //        rt5616:rt5616{
+ //            codec_name = "rt5616";
+@@ -1824,12 +1824,10 @@ sdio{
+ //$$ L2 PROP_U32 4 = "amlogic,clrmask"
+ //$$ L2 PROP_STR 8 = "amlogic,pins"
+         audio_pins:audio_pin{
+-            amlogic,setmask=<3 0x78000000      /*bt pcm*/
+-                             10 0x78000000>;  /*external audio codec*/
++            amlogic,setmask=<3 0x78000000>;    /*bt pcm*/
+             amlogic,clrmask=<4 0x3c000         /*bt pcm*/
+                              5 0x1000>;        /*bt pcm*/
+-            amlogic,pins = "GPIOX_4","GPIOX_5","GPIOX_6","GPIOX_7",        /*bt pcm*/
+-                           "GPIOAO_8","GPIOAO_9","GPIOAO_10","GPIOAO_11";  /*external audio codec*/
++            amlogic,pins = "GPIOX_4","GPIOX_5","GPIOX_6","GPIOX_7";        /*bt pcm*/
+         };
+ 
+ //$$ MATCH "Audio_pin_0_match" = "&audio_spdif_pins"

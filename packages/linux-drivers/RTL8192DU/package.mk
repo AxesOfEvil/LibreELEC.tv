@@ -1,6 +1,6 @@
 ################################################################################
 #      This file is part of OpenELEC - http://www.openelec.tv
-#      Copyright (C) 2009-2016 Stephan Raue (stephan@openelec.tv)
+#      Copyright (C) 2009-2014 Stephan Raue (stephan@openelec.tv)
 #
 #  OpenELEC is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -17,13 +17,12 @@
 ################################################################################
 
 PKG_NAME="RTL8192DU"
-PKG_VERSION="9e7eb15"
+PKG_VERSION="7498302"
 PKG_REV="1"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"
 PKG_SITE="https://github.com/lwfinger/rtl8192du"
-PKG_URL="https://github.com/lwfinger/rtl8192du/archive/$PKG_VERSION.tar.gz"
-PKG_SOURCE_DIR="rtl8192du-$PKG_VERSION*"
+PKG_URL="$DISTRO_SRC/$PKG_NAME-$PKG_VERSION.tar.xz"
 PKG_DEPENDS_TARGET="toolchain linux"
 PKG_NEED_UNPACK="$LINUX_DEPENDS"
 PKG_PRIORITY="optional"
@@ -40,7 +39,7 @@ pre_make_target() {
 
 make_target() {
   make V=1 \
-       ARCH=$TARGET_KERNEL_ARCH \
+       ARCH=$TARGET_ARCH \
        KSRC=$(kernel_path) \
        CROSS_COMPILE=$TARGET_PREFIX \
        CONFIG_POWER_SAVING=n

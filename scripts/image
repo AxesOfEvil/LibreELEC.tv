@@ -54,10 +54,19 @@ else
   LIBREELEC_BUILD="community"
 fi
 
-TARGET_VERSION="$PROJECT.$TARGET_ARCH-$LIBREELEC_VERSION"
+if [ -z "$DEVICE" ]; then
+  TARGET_VERSION="$PROJECT.$TARGET_ARCH-$LIBREELEC_VERSION"
+else
+  TARGET_VERSION="$PROJECT.$DEVICE.$TARGET_ARCH-$LIBREELEC_VERSION"
+fi
 IMAGE_NAME="$DISTRONAME-$TARGET_VERSION"
+
 if [ "$DEVEL_VERSION" = "devel" ] ; then
-  IMAGE_NAME="$DISTRONAME-$PROJECT.$TARGET_ARCH-$OS_VERSION-$LIBREELEC_VERSION"
+  if [ -z "$DEVICE" ]; then
+    IMAGE_NAME="$DISTRONAME-$PROJECT.$TARGET_ARCH-$OS_VERSION-$LIBREELEC_VERSION"
+  else
+    IMAGE_NAME="$DISTRONAME-$PROJECT.$DEVICE.$TARGET_ARCH-$OS_VERSION-$LIBREELEC_VERSION"
+  fi
 fi
 
 if [ "$PROJECT" == "imx6" -a -n "$SYSTEM" ]; then
@@ -65,7 +74,7 @@ if [ "$PROJECT" == "imx6" -a -n "$SYSTEM" ]; then
 fi
 
 if [ -n "$CUSTOM_IMAGE_NAME" ]; then
-   IMAGE_NAME="$CUSTOM_IMAGE_NAME"
+   IMAGE_NAME="$CUSTOM_IMAGE_NAME" 
 fi
 
 if [ -n "$IMAGE_SUFFIX" ]; then
@@ -213,6 +222,17 @@ fi
     done
   fi
 
+# copy board related files to filesystem
+  if [ -n "$DEVICE" -a -d "$PROJECT_DIR/$PROJECT/devices/$DEVICE/filesystem" ]; then
+    cp -PR $PROJECT_DIR/$PROJECT/devices/$DEVICE/filesystem/* $INSTALL
+    # install device specific systemd services
+    for service in $PROJECT_DIR/$PROJECT/devices/$DEVICE/filesystem/usr/lib/systemd/system/*.service ; do
+      if [ -f "$service" ] ; then
+        enable_service $(basename $service)
+      fi
+    done
+  fi
+
 # run depmod
   MODVER=$(basename $(ls -d $INSTALL/lib/modules/*))
   find $INSTALL/lib/modules/$MODVER/ -name *.ko | \
@@ -229,12 +249,26 @@ fi
     rm -rf $TARGET_IMG/$IMAGE_NAME.kernel
 
 # copy kernel to target dir
+  if [ "$BOOTLOADER" = "u-boot" -o "$LINUX" = "amlogic" ]; then
+    KERNEL_IMAGE="$KERNEL_UBOOT_TARGET"
+  elif [ "$BOOTLOADER" = "bcm2835-bootloader" ]; then
+    KERNEL_IMAGE="zImage"
+  else
+    KERNEL_IMAGE="bzImage"
+  fi
+
+  if [ "$TARGET_ARCH" = x86_64 ]; then
+    KERNEL_ARCH="x86"
+  elif [ "$TARGET_ARCH" = arm ]; then
+    KERNEL_ARCH="arm"
+  fi
+
   if [ "$BOOTLOADER" = "bcm2835-bootloader" ]; then
     echo "injecting DeviceTreeBlobs to kernel..."
-    perl $BUILD/linux-$(kernel_version)/scripts/mkknlimg $BUILD/linux-$(kernel_version)/arch/$TARGET_KERNEL_ARCH/boot/$KERNEL_TARGET $TARGET_IMG/$IMAGE_NAME.kernel
+    perl scripts/mkknlimg $BUILD/linux-*/arch/$KERNEL_ARCH/boot/$KERNEL_IMAGE $TARGET_IMG/$IMAGE_NAME.kernel
     echo "...done"
   else
-    cp -PR $BUILD/linux-$(kernel_version)/arch/$TARGET_KERNEL_ARCH/boot/$KERNEL_TARGET $TARGET_IMG/$IMAGE_NAME.kernel
+    cp -PR $BUILD/linux-*/arch/$KERNEL_ARCH/boot/$KERNEL_IMAGE $TARGET_IMG/$IMAGE_NAME.kernel
   fi
   chmod 0644 $TARGET_IMG/$IMAGE_NAME.kernel
 
@@ -243,8 +277,16 @@ fi
     SQUASHFS_COMPRESSION="gzip"
   fi
 
+  if [ "$SQUASHFS_COMPRESSION" = "lz4" ]; then
+    SQUASHFS_COMPRESSION_LEVEL="-Xhc"
+  fi
+
+  if [ -z "$SQUASHFS_BLOCK_SIZE" ]; then
+    SQUASHFS_BLOCK_SIZE="131072"
+  fi
+
   echo "rm -rf $TARGET_IMG/$IMAGE_NAME.system" >> $FAKEROOT_SCRIPT
-  echo "$ROOT/$TOOLCHAIN/bin/mksquashfs $BUILD/image/system $TARGET_IMG/$IMAGE_NAME.system -noappend -comp $SQUASHFS_COMPRESSION" >> $FAKEROOT_SCRIPT
+  echo "$ROOT/$TOOLCHAIN/bin/mksquashfs $BUILD/image/system $TARGET_IMG/$IMAGE_NAME.system -noappend -b $SQUASHFS_BLOCK_SIZE -comp $SQUASHFS_COMPRESSION $SQUASHFS_COMPRESSION_LEVEL" >> $FAKEROOT_SCRIPT
 
 # run fakeroot
   $ROOT/$TOOLCHAIN/bin/fakeroot -- $FAKEROOT_SCRIPT
@@ -253,9 +295,17 @@ fi
 # set permissions
   chmod 0644 $TARGET_IMG/$IMAGE_NAME.system
 
-  if [ "$1" = "release" -o "$1" = "mkimage" -o "$1" = "amlpkg" -o "$1" = "noobs" ]; then
+  if [ "$1" = "release" -o "$1" = "mkimage" -o "$1" = "amlpkg" ]; then
 
     RELEASE_DIR="target/$IMAGE_NAME"
+
+    if [ -n "$DEVICE" -a -d "$PROJECT_DIR/$PROJECT/devices/$DEVICE/install" ]; then
+      INSTALL_SRC_DIR="$PROJECT_DIR/$PROJECT/devices/$DEVICE/install"
+    else
+      INSTALL_SRC_DIR="$PROJECT_DIR/$PROJECT/install"
+    fi
+
+    MKIMAGE_TOOL_CMD="$ROOT/$BUILD/linux-$(kernel_version)/arch/$TARGET_KERNEL_ARCH/boot/mkimage -A $TARGET_KERNEL_ARCH -O linux -T script -C none -d"
 
     # cleanup
       rm -rf $RELEASE_DIR
@@ -338,7 +388,7 @@ fi
       tar cf $TARGET_IMG/$IMAGE_NAME.tar -C target $IMAGE_NAME
 
     # create image files if requested
-      if [[ ( "$1" = "amlpkg" || "$1" = "noobs" || "$1" = "mkimage" ) && -n "$BOOTLOADER" ]]; then
+      if [[ ( "$1" = "amlpkg" || "$1" = "mkimage" ) && -n "$BOOTLOADER" ]]; then
         # projects can set KERNEL_NAME (kernel.img)
         if [ -z "$KERNEL_NAME" ] ; then
           KERNEL_NAME="KERNEL"
@@ -360,8 +410,10 @@ fi
           TOOLCHAIN="$TOOLCHAIN" \
           TARGET_IMG="$TARGET_IMG" \
           IMAGE_NAME="$IMAGE_NAME" \
+          INSTALL_SRC_DIR="$INSTALL_SRC_DIR" \
           BOOTLOADER="$BOOTLOADER" \
           KERNEL_NAME="$KERNEL_NAME" \
+          MKIMAGE_TOOL_CMD="$MKIMAGE_TOOL_CMD" \
           RELEASE_DIR="$RELEASE_DIR" \
           UUID_SYSTEM="$(uuidgen)" \
           UUID_STORAGE="$(uuidgen)" \
@@ -372,14 +424,10 @@ fi
           $SCRIPTS/mkimage
       fi
 
-      # cleanup release dir
-      rm -rf $RELEASE_DIR
-
     # create WeTek Play (Amlogic) ZIP update and auto-install packages if requested
       if [ "$1" = "amlpkg" ]; then
         echo "Creating Amlogic ZIP update package"
 
-        INSTALL_SRC_DIR="$PROJECT_DIR/$PROJECT/install"
         AML_PKG_DIR="$RELEASE_DIR/ampl-pkg"
 
         # create package directory
@@ -412,131 +460,135 @@ fi
         java -Xmx1024m -jar $SIGNAPK_DIR/signapk.jar -w $SIGNAPK_DIR/testkey.x509.pem $SIGNAPK_DIR/testkey.pk8 update.zip sign/$IMAGE_NAME-update.zip
 
         # create the auto-install package
+        echo "Creating Amlogic ZIP auto-install package"
+        pushd sign > /dev/null
+        echo --update_package=/sdcard/$IMAGE_NAME-update.zip > factory_update_param.aml
+        echo --wipe_data >> factory_update_param.aml
+        echo --wipe_cache >> factory_update_param.aml
         if [ -f "$INSTALL_SRC_DIR/files/recovery.img" ]; then
-          echo "Creating Amlogic ZIP auto-install package"
-          pushd sign > /dev/null
-          echo --update_package=/sdcard/$IMAGE_NAME-update.zip > factory_update_param.aml
-          echo --wipe_data >> factory_update_param.aml
-          echo --wipe_cache >> factory_update_param.aml
           cp $INSTALL_SRC_DIR/files/recovery.img .
-          if [ -f $INSTALL_SRC_DIR/files/aml_autoscript ]; then
-            cp $INSTALL_SRC_DIR/files/aml_autoscript .
-          fi
-          zip -q $TARGET_IMG/$IMAGE_NAME.zip *
-          popd > /dev/null
         fi
+        if [ -f $INSTALL_SRC_DIR/files/aml_autoscript ]; then
+          cp $INSTALL_SRC_DIR/files/aml_autoscript .
+        elif [ -f "$INSTALL_SRC_DIR/aml_autoscript.src" ]; then
+          $MKIMAGE_TOOL_CMD "$INSTALL_SRC_DIR/aml_autoscript.src" aml_autoscript > /dev/null
+        fi
+        zip -q $TARGET_IMG/$IMAGE_NAME.zip *
+        popd > /dev/null
 
         # copy update package to target directory
         cp sign/$IMAGE_NAME-update.zip $TARGET_IMG
         popd > /dev/null
-
-      elif [ "$1" = "noobs" ]; then
-
-        RELEASE_DIR="$TARGET_IMG/${IMAGE_NAME}-$1"
-
-        # cleanup
-          rm -rf $RELEASE_DIR
-
-        # create release dir
-          mkdir -p $RELEASE_DIR/${DISTRONAME}_${PROJECT}
-
-          if [ -f $DISTRO_DIR/$DISTRO/${DISTRONAME}_40x40.png ]; then
-            cp -PR $DISTRO_DIR/$DISTRO/${DISTRONAME}_40x40.png $RELEASE_DIR/${DISTRONAME}_${PROJECT}/${DISTRONAME}_${PROJECT}.png
-          else
-            cp -PR $DISTRO_DIR/$DISTRO/${DISTRONAME}.png $RELEASE_DIR/${DISTRONAME}_${PROJECT}/${DISTRONAME}_${PROJECT}.png
-          fi
-          cp -PR $ROOT/config/noobs/os.json $RELEASE_DIR/${DISTRONAME}_${PROJECT}
-          cp -PR $ROOT/config/noobs/partition_setup.sh $RELEASE_DIR/${DISTRONAME}_${PROJECT}
-          cp -PR $ROOT/config/noobs/partitions.json $RELEASE_DIR/${DISTRONAME}_${PROJECT}
-          if [ -d $DISTRO_DIR/$DISTRO/noobs/marketing ]; then
-            tar cf $RELEASE_DIR/${DISTRONAME}_${PROJECT}/marketing.tar -C $DISTRO_DIR/$DISTRO/noobs/marketing .
-          else
-            tar cf $RELEASE_DIR/${DISTRONAME}_${PROJECT}/marketing.tar -C $ROOT/config/noobs/marketing .
-          fi
-          cp $ROOT/README* $RELEASE_DIR/${DISTRONAME}_${PROJECT}
-          cp $ROOT/CHANGELOG $RELEASE_DIR/${DISTRONAME}_${PROJECT}/release_notes.txt
-
-
-          sed -e "s%@DISTRONAME@%$DISTRONAME%g" \
-              -e "s%@PROJECT@%$PROJECT%g" \
-              -e "s%@LIBREELEC_VERSION@%$LIBREELEC_VERSION%g" \
-              -e "s%@RELEASE_DATE@%$(date +%F)%g" \
-              -e "s%@KERNEL_VERSION@%$(kernel_version)%g" \
-              -e "s%@DESCRIPTION@%$DESCRIPTION%g" \
-              -e "s%@ROOT_PASSWORD@%$ROOT_PASSWORD%g" \
-              -e "s%@NOOBS_SUPPORTED_MODELS@%$NOOBS_SUPPORTED_MODELS%g" \
-              -e "s%@NOOBS_HEX@%$NOOBS_HEX%g" \
-              -i $RELEASE_DIR/${DISTRONAME}_${PROJECT}/os.json
-
-          sed -e "s%@DISTRONAME@%$DISTRONAME%g" \
-              -e "s%@PROJECT@%$PROJECT%g" \
-              -e "s%@SYSTEM_SIZE@%$SYSTEM_SIZE%g" \
-              -i $RELEASE_DIR/${DISTRONAME}_${PROJECT}/partitions.json
-
-        # create System dir
-          mkdir -p $RELEASE_DIR/${DISTRONAME}_${PROJECT}/System
-
-            BOOTLOADER_DIR=`find $PACKAGES -type d -name $BOOTLOADER 2>/dev/null`
-            if [ -d "$BOOTLOADER_DIR"/files/3rdparty/bootloader/ ]; then
-              cp -PR $BOOTLOADER_DIR/files/3rdparty/bootloader/* $RELEASE_DIR/${DISTRONAME}_${PROJECT}/System
-            fi
-
-          # copy Bootloader
-            cp -PR $BUILD/bcm2835-bootloader-*/LICENCE* $RELEASE_DIR/${DISTRONAME}_${PROJECT}/System/
-            cp -PR $BUILD/bcm2835-bootloader-*/bootcode.bin $RELEASE_DIR/${DISTRONAME}_${PROJECT}/System/
-            cp -PR $BUILD/bcm2835-bootloader-*/fixup_x.dat $RELEASE_DIR/${DISTRONAME}_${PROJECT}/System/fixup.dat
-            cp -PR $BUILD/bcm2835-bootloader-*/start_x.elf $RELEASE_DIR/${DISTRONAME}_${PROJECT}/System/start.elf
-            [ -f $BUILD/bcm2835-bootloader-*/dt-blob.bin ] && cp -PR $BUILD/bcm2835-bootloader-*/dt-blob.bin $RELEASE_DIR/${DISTRONAME}_${PROJECT}/System/dt-blob.bin
-
-          # copy system files
-            cp $TARGET_IMG/$IMAGE_NAME.system $RELEASE_DIR/${DISTRONAME}_${PROJECT}/System/SYSTEM
-            cp $TARGET_IMG/$IMAGE_NAME.kernel $RELEASE_DIR/${DISTRONAME}_${PROJECT}/System/kernel.img
-
-            for dtb in $INSTALL/usr/share/bootloader/*.dtb ; do
-              if [ -f $dtb ]; then
-                cp -PR $dtb $RELEASE_DIR/${DISTRONAME}_${PROJECT}/System
-              fi
-            done
-
-            for overlay in $INSTALL/usr/share/bootloader/overlays/* ; do
-              if [ -f $overlay ]; then
-                mkdir -p $RELEASE_DIR/${DISTRONAME}_${PROJECT}/System/overlays
-                cp -PR $overlay $RELEASE_DIR/${DISTRONAME}_${PROJECT}/System/overlays
-              fi
-            done
-
-          # create md5sum's
-            ( cd $RELEASE_DIR/${DISTRONAME}_${PROJECT}/System;
-              md5sum -t SYSTEM > SYSTEM.md5;
-              md5sum -t kernel.img > kernel.img.md5;
-            )
-
-          # copy additional files
-            mkdir -p $RELEASE_DIR/${DISTRONAME}_${PROJECT}/System/licenses
-              cp $ROOT/licenses/* $RELEASE_DIR/${DISTRONAME}_${PROJECT}/System/licenses
-
-        # create Storage dir
-          mkdir -p $RELEASE_DIR/${DISTRONAME}_${PROJECT}/Storage
-
-        # remove an previous created release tarball
-          rm -rf $RELEASE_DIR/${DISTRONAME}_${PROJECT}/${DISTRONAME}_${PROJECT}_System.tar.xz
-          rm -rf $RELEASE_DIR/${DISTRONAME}_${PROJECT}/${DISTRONAME}_${PROJECT}_Storage.tar.xz
-
-        # create filesystem tarballs
-          tar cJf $RELEASE_DIR/${DISTRONAME}_${PROJECT}/${DISTRONAME}_${PROJECT}_System.tar.xz -C $RELEASE_DIR/${DISTRONAME}_${PROJECT}/System/ .
-          tar cJf $RELEASE_DIR/${DISTRONAME}_${PROJECT}/${DISTRONAME}_${PROJECT}_Storage.tar.xz -C $RELEASE_DIR/${DISTRONAME}_${PROJECT}/Storage/ .
-
-        # remove an filesystem dirs
-          rm -rf $RELEASE_DIR/${DISTRONAME}_${PROJECT}/System
-          rm -rf $RELEASE_DIR/${DISTRONAME}_${PROJECT}/Storage
-
-        # remove an previous created release tarball
-          rm -rf $TARGET_IMG/${IMAGE_NAME}-$1.tar
-
-        # create release tarball
-          tar cf $TARGET_IMG/${IMAGE_NAME}-$1.tar -C $TARGET ${IMAGE_NAME}-$1
-
-        # cleanup noobs dir
-          rm -rf $RELEASE_DIR
       fi
+
+    # cleanup release dir
+      rm -rf $RELEASE_DIR
+
+  elif [ "$1" = "noobs" ]; then
+
+    RELEASE_DIR="$TARGET_IMG/${IMAGE_NAME}-$1"
+
+    # cleanup
+      rm -rf $RELEASE_DIR
+
+    # create release dir
+      mkdir -p $RELEASE_DIR/${DISTRONAME}_${PROJECT}
+
+      if [ -f $DISTRO_DIR/$DISTRO/${DISTRONAME}_40x40.png ]; then
+        cp -PR $DISTRO_DIR/$DISTRO/${DISTRONAME}_40x40.png $RELEASE_DIR/${DISTRONAME}_${PROJECT}/${DISTRONAME}_${PROJECT}.png
+      else
+        cp -PR $DISTRO_DIR/$DISTRO/${DISTRONAME}.png $RELEASE_DIR/${DISTRONAME}_${PROJECT}/${DISTRONAME}_${PROJECT}.png
+      fi
+      cp -PR $ROOT/config/noobs/os.json $RELEASE_DIR/${DISTRONAME}_${PROJECT}
+      cp -PR $ROOT/config/noobs/partition_setup.sh $RELEASE_DIR/${DISTRONAME}_${PROJECT}
+      cp -PR $ROOT/config/noobs/partitions.json $RELEASE_DIR/${DISTRONAME}_${PROJECT}
+      if [ -d $DISTRO_DIR/$DISTRO/noobs/marketing ]; then
+        tar cf $RELEASE_DIR/${DISTRONAME}_${PROJECT}/marketing.tar -C $DISTRO_DIR/$DISTRO/noobs/marketing .
+      else
+        tar cf $RELEASE_DIR/${DISTRONAME}_${PROJECT}/marketing.tar -C $ROOT/config/noobs/marketing .
+      fi
+      cp $ROOT/README* $RELEASE_DIR/${DISTRONAME}_${PROJECT}
+      cp $ROOT/CHANGELOG $RELEASE_DIR/${DISTRONAME}_${PROJECT}/release_notes.txt
+
+
+      sed -e "s%@DISTRONAME@%$DISTRONAME%g" \
+          -e "s%@PROJECT@%$PROJECT%g" \
+          -e "s%@LIBREELEC_VERSION@%$LIBREELEC_VERSION%g" \
+          -e "s%@RELEASE_DATE@%$(date +%F)%g" \
+          -e "s%@KERNEL_VERSION@%$(kernel_version)%g" \
+          -e "s%@DESCRIPTION@%$DESCRIPTION%g" \
+          -e "s%@ROOT_PASSWORD@%$ROOT_PASSWORD%g" \
+          -e "s%@NOOBS_SUPPORTED_MODELS@%$NOOBS_SUPPORTED_MODELS%g" \
+          -e "s%@NOOBS_HEX@%$NOOBS_HEX%g" \
+          -i $RELEASE_DIR/${DISTRONAME}_${PROJECT}/os.json
+
+      sed -e "s%@DISTRONAME@%$DISTRONAME%g" \
+          -e "s%@PROJECT@%$PROJECT%g" \
+          -e "s%@SYSTEM_SIZE@%$SYSTEM_SIZE%g" \
+          -i $RELEASE_DIR/${DISTRONAME}_${PROJECT}/partitions.json
+
+    # create System dir
+      mkdir -p $RELEASE_DIR/${DISTRONAME}_${PROJECT}/System
+
+        BOOTLOADER_DIR=`find $PACKAGES -type d -name $BOOTLOADER 2>/dev/null`
+        if [ -d "$BOOTLOADER_DIR"/files/3rdparty/bootloader/ ]; then
+          cp -PR $BOOTLOADER_DIR/files/3rdparty/bootloader/* $RELEASE_DIR/${DISTRONAME}_${PROJECT}/System
+        fi
+
+      # copy Bootloader
+        cp -PR $BUILD/bcm2835-bootloader-*/LICENCE* $RELEASE_DIR/${DISTRONAME}_${PROJECT}/System/
+        cp -PR $BUILD/bcm2835-bootloader-*/bootcode.bin $RELEASE_DIR/${DISTRONAME}_${PROJECT}/System/
+        cp -PR $BUILD/bcm2835-bootloader-*/fixup_x.dat $RELEASE_DIR/${DISTRONAME}_${PROJECT}/System/fixup.dat
+        cp -PR $BUILD/bcm2835-bootloader-*/start_x.elf $RELEASE_DIR/${DISTRONAME}_${PROJECT}/System/start.elf
+
+      # copy system files
+        cp $TARGET_IMG/$IMAGE_NAME.system $RELEASE_DIR/${DISTRONAME}_${PROJECT}/System/SYSTEM
+        cp $TARGET_IMG/$IMAGE_NAME.kernel $RELEASE_DIR/${DISTRONAME}_${PROJECT}/System/kernel.img
+
+        for dtb in $INSTALL/usr/share/bootloader/*.dtb ; do
+          if [ -f $dtb ]; then
+            cp -PR $dtb $RELEASE_DIR/${DISTRONAME}_${PROJECT}/System
+          fi
+        done
+
+        for overlay in $INSTALL/usr/share/bootloader/overlays/* ; do
+          if [ -f $overlay ]; then
+            mkdir -p $RELEASE_DIR/${DISTRONAME}_${PROJECT}/System/overlays
+            cp -PR $overlay $RELEASE_DIR/${DISTRONAME}_${PROJECT}/System/overlays
+          fi
+        done
+
+      # create md5sum's
+        ( cd $RELEASE_DIR/${DISTRONAME}_${PROJECT}/System;
+          md5sum -t SYSTEM > SYSTEM.md5;
+          md5sum -t kernel.img > kernel.img.md5;
+        )
+
+      # copy additional files
+        mkdir -p $RELEASE_DIR/${DISTRONAME}_${PROJECT}/System/licenses
+          cp $ROOT/licenses/* $RELEASE_DIR/${DISTRONAME}_${PROJECT}/System/licenses
+
+    # create Storage dir
+      mkdir -p $RELEASE_DIR/${DISTRONAME}_${PROJECT}/Storage
+
+    # remove an previous created release tarball
+      rm -rf $RELEASE_DIR/${DISTRONAME}_${PROJECT}/${DISTRONAME}_${PROJECT}_System.tar.xz
+      rm -rf $RELEASE_DIR/${DISTRONAME}_${PROJECT}/${DISTRONAME}_${PROJECT}_Storage.tar.xz
+
+    # create filesystem tarballs
+      tar cJf $RELEASE_DIR/${DISTRONAME}_${PROJECT}/${DISTRONAME}_${PROJECT}_System.tar.xz -C $RELEASE_DIR/${DISTRONAME}_${PROJECT}/System/ .
+      tar cJf $RELEASE_DIR/${DISTRONAME}_${PROJECT}/${DISTRONAME}_${PROJECT}_Storage.tar.xz -C $RELEASE_DIR/${DISTRONAME}_${PROJECT}/Storage/ .
+
+    # remove an filesystem dirs
+      rm -rf $RELEASE_DIR/${DISTRONAME}_${PROJECT}/System
+      rm -rf $RELEASE_DIR/${DISTRONAME}_${PROJECT}/Storage
+
+    # remove an previous created release tarball
+      rm -rf $TARGET_IMG/${IMAGE_NAME}-$1.tar
+
+    # create release tarball
+      tar cf $TARGET_IMG/${IMAGE_NAME}-$1.tar -C $TARGET ${IMAGE_NAME}-$1
+
+    # cleanup release dir
+      rm -rf $RELEASE_DIR
   fi

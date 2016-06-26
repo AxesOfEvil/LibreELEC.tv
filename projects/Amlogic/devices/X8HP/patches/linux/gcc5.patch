@@ -1,0 +1,297 @@
+diff --git a/arch/arm/include/asm/ftrace.h b/arch/arm/include/asm/ftrace.h
+index f89515a..2bb8cac 100644
+--- a/arch/arm/include/asm/ftrace.h
++++ b/arch/arm/include/asm/ftrace.h
+@@ -45,7 +45,7 @@ void *return_address(unsigned int);
+
+ #else
+
+-extern inline void *return_address(unsigned int level)
++static inline void *return_address(unsigned int level)
+ {
+        return NULL;
+ }
+diff --git a/arch/arm/kernel/return_address.c b/arch/arm/kernel/return_address.c
+index 0b13a72..75ae768 100644
+--- a/arch/arm/kernel/return_address.c
++++ b/arch/arm/kernel/return_address.c
+@@ -63,10 +63,12 @@
+ #warning "TODO: return_address should use unwind tables"
+ #endif
+ 
++/*
+ void *return_address(unsigned int level)
+ {
+ 	return NULL;
+ }
++*/
+ 
+ #endif /* if defined(CONFIG_FRAME_POINTER) && !defined(CONFIG_ARM_UNWIND) / else */
+ 
+--- a/drivers/amlogic/wifi/realtek/rtl8189ES/include/ieee80211.h	2015-11-01 06:12:47.000000000 -0800
++++ b/drivers/amlogic/wifi/realtek/rtl8189ES/include/ieee80211.h	2015-11-01 06:12:47.000000000 -0800
+@@ -1314,18 +1314,18 @@
+ (((Addr[2]) & 0xff) == 0xff) && (((Addr[3]) & 0xff) == 0xff) && (((Addr[4]) & 0xff) == 0xff) && \
+ (((Addr[5]) & 0xff) == 0xff))
+ #else
+-extern __inline int is_multicast_mac_addr(const u8 *addr)
++static inline int is_multicast_mac_addr(const u8 *addr)
+ {
+         return ((addr[0] != 0xff) && (0x01 & addr[0]));
+ }
+ 
+-extern __inline int is_broadcast_mac_addr(const u8 *addr)
++static inline int is_broadcast_mac_addr(const u8 *addr)
+ {
+ 	return ((addr[0] == 0xff) && (addr[1] == 0xff) && (addr[2] == 0xff) &&   \
+ 		(addr[3] == 0xff) && (addr[4] == 0xff) && (addr[5] == 0xff));
+ }
+ 
+-extern __inline int is_zero_mac_addr(const u8 *addr)
++static inline int is_zero_mac_addr(const u8 *addr)
+ {
+ 	return ((addr[0] == 0x00) && (addr[1] == 0x00) && (addr[2] == 0x00) &&   \
+ 		(addr[3] == 0x00) && (addr[4] == 0x00) && (addr[5] == 0x00));
+diff -u -x '*.c' -x '*.cmd' -x '*o' -r ../LibreELEC.tv-X8HP/build.LibreELEC-S812-surkovalex.arm-7.0-devel/linux-amlogic-3.10-c0c2834/drivers/amlogic/wifi/realtek/rtl8192EU/include/ieee80211.h build.LibreELEC-Amlogic.X8HP.arm-devel/linux-amlogic-3.10-c0c2834/drivers/amlogic/wifi/realtek/rtl8192EU/include/ieee80211.h
+--- a/drivers/amlogic/wifi/realtek/rtl8192EU/include/ieee80211.h	2015-11-01 06:12:47.000000000 -0800
+--- b/drivers/amlogic/wifi/realtek/rtl8192EU/include/ieee80211.h	2016-06-21 08:22:38.357488039 -0700
+@@ -1314,18 +1314,18 @@
+ (((Addr[2]) & 0xff) == 0xff) && (((Addr[3]) & 0xff) == 0xff) && (((Addr[4]) & 0xff) == 0xff) && \
+ (((Addr[5]) & 0xff) == 0xff))
+ #else
+-extern __inline int is_multicast_mac_addr(const u8 *addr)
++static inline int is_multicast_mac_addr(const u8 *addr)
+ {
+         return ((addr[0] != 0xff) && (0x01 & addr[0]));
+ }
+ 
+-extern __inline int is_broadcast_mac_addr(const u8 *addr)
++static inline int is_broadcast_mac_addr(const u8 *addr)
+ {
+ 	return ((addr[0] == 0xff) && (addr[1] == 0xff) && (addr[2] == 0xff) &&   \
+ 		(addr[3] == 0xff) && (addr[4] == 0xff) && (addr[5] == 0xff));
+ }
+ 
+-extern __inline int is_zero_mac_addr(const u8 *addr)
++static inline int is_zero_mac_addr(const u8 *addr)
+ {
+ 	return ((addr[0] == 0x00) && (addr[1] == 0x00) && (addr[2] == 0x00) &&   \
+ 		(addr[3] == 0x00) && (addr[4] == 0x00) && (addr[5] == 0x00));
+diff -u -x '*.c' -x '*.cmd' -x '*o' -r ../LibreELEC.tv-X8HP/build.LibreELEC-S812-surkovalex.arm-7.0-devel/linux-amlogic-3.10-c0c2834/drivers/amlogic/wifi/realtek/rtl8723AU/include/ieee80211.h build.LibreELEC-Amlogic.X8HP.arm-devel/linux-amlogic-3.10-c0c2834/drivers/amlogic/wifi/realtek/rtl8723AU/include/ieee80211.h
+--- a/drivers/amlogic/wifi/realtek/rtl8723AU/include/ieee80211.h	2015-11-01 06:12:47.000000000 -0800
+--- b/drivers/amlogic/wifi/realtek/rtl8723AU/include/ieee80211.h	2016-06-21 08:23:35.229169546 -0700
+@@ -1196,18 +1196,18 @@
+ (((Addr[2]) & 0xff) == 0xff) && (((Addr[3]) & 0xff) == 0xff) && (((Addr[4]) & 0xff) == 0xff) && \
+ (((Addr[5]) & 0xff) == 0xff))
+ #else
+-extern __inline int is_multicast_mac_addr(const u8 *addr)
++static inline int is_multicast_mac_addr(const u8 *addr)
+ {
+         return ((addr[0] != 0xff) && (0x01 & addr[0]));
+ }
+ 
+-extern __inline int is_broadcast_mac_addr(const u8 *addr)
++static inline int is_broadcast_mac_addr(const u8 *addr)
+ {
+ 	return ((addr[0] == 0xff) && (addr[1] == 0xff) && (addr[2] == 0xff) &&   \
+ 		(addr[3] == 0xff) && (addr[4] == 0xff) && (addr[5] == 0xff));
+ }
+ 
+-extern __inline int is_zero_mac_addr(const u8 *addr)
++static inline int is_zero_mac_addr(const u8 *addr)
+ {
+ 	return ((addr[0] == 0x00) && (addr[1] == 0x00) && (addr[2] == 0x00) &&   \
+ 		(addr[3] == 0x00) && (addr[4] == 0x00) && (addr[5] == 0x00));
+diff -u -x '*.c' -x '*.cmd' -x '*o' -r ../LibreELEC.tv-X8HP/build.LibreELEC-S812-surkovalex.arm-7.0-devel/linux-amlogic-3.10-c0c2834/drivers/amlogic/wifi/realtek/rtl8723BS/include/ieee80211.h build.LibreELEC-Amlogic.X8HP.arm-devel/linux-amlogic-3.10-c0c2834/drivers/amlogic/wifi/realtek/rtl8723BS/include/ieee80211.h
+--- a/drivers/amlogic/wifi/realtek/rtl8723BS/include/ieee80211.h	2015-11-01 06:12:47.000000000 -0800
+--- b/drivers/amlogic/wifi/realtek/rtl8723BS/include/ieee80211.h	2016-06-21 08:21:51.665749312 -0700
+@@ -1314,18 +1314,18 @@
+ (((Addr[2]) & 0xff) == 0xff) && (((Addr[3]) & 0xff) == 0xff) && (((Addr[4]) & 0xff) == 0xff) && \
+ (((Addr[5]) & 0xff) == 0xff))
+ #else
+-extern __inline int is_multicast_mac_addr(const u8 *addr)
++static inline int is_multicast_mac_addr(const u8 *addr)
+ {
+         return ((addr[0] != 0xff) && (0x01 & addr[0]));
+ }
+ 
+-extern __inline int is_broadcast_mac_addr(const u8 *addr)
++static inline int is_broadcast_mac_addr(const u8 *addr)
+ {
+ 	return ((addr[0] == 0xff) && (addr[1] == 0xff) && (addr[2] == 0xff) &&   \
+ 		(addr[3] == 0xff) && (addr[4] == 0xff) && (addr[5] == 0xff));
+ }
+ 
+-extern __inline int is_zero_mac_addr(const u8 *addr)
++static inline int is_zero_mac_addr(const u8 *addr)
+ {
+ 	return ((addr[0] == 0x00) && (addr[1] == 0x00) && (addr[2] == 0x00) &&   \
+ 		(addr[3] == 0x00) && (addr[4] == 0x00) && (addr[5] == 0x00));
+diff -u -x '*.c' -x '*.cmd' -x '*o' -r ../LibreELEC.tv-X8HP/build.LibreELEC-S812-surkovalex.arm-7.0-devel/linux-amlogic-3.10-c0c2834/drivers/amlogic/wifi/realtek/rtl8723BU/include/ieee80211.h build.LibreELEC-Amlogic.X8HP.arm-devel/linux-amlogic-3.10-c0c2834/drivers/amlogic/wifi/realtek/rtl8723BU/include/ieee80211.h
+--- a/drivers/amlogic/wifi/realtek/rtl8723BU/include/ieee80211.h	2015-11-01 06:12:47.000000000 -0800
+--- b/drivers/amlogic/wifi/realtek/rtl8723BU/include/ieee80211.h	2016-06-21 08:23:03.081349615 -0700
+@@ -1314,18 +1314,18 @@
+ (((Addr[2]) & 0xff) == 0xff) && (((Addr[3]) & 0xff) == 0xff) && (((Addr[4]) & 0xff) == 0xff) && \
+ (((Addr[5]) & 0xff) == 0xff))
+ #else
+-extern __inline int is_multicast_mac_addr(const u8 *addr)
++static inline int is_multicast_mac_addr(const u8 *addr)
+ {
+         return ((addr[0] != 0xff) && (0x01 & addr[0]));
+ }
+ 
+-extern __inline int is_broadcast_mac_addr(const u8 *addr)
++static inline int is_broadcast_mac_addr(const u8 *addr)
+ {
+ 	return ((addr[0] == 0xff) && (addr[1] == 0xff) && (addr[2] == 0xff) &&   \
+ 		(addr[3] == 0xff) && (addr[4] == 0xff) && (addr[5] == 0xff));
+ }
+ 
+-extern __inline int is_zero_mac_addr(const u8 *addr)
++static inline int is_zero_mac_addr(const u8 *addr)
+ {
+ 	return ((addr[0] == 0x00) && (addr[1] == 0x00) && (addr[2] == 0x00) &&   \
+ 		(addr[3] == 0x00) && (addr[4] == 0x00) && (addr[5] == 0x00));
+diff -u -x '*.c' -x '*.cmd' -x '*o' -r ../LibreELEC.tv-X8HP/build.LibreELEC-S812-surkovalex.arm-7.0-devel/linux-amlogic-3.10-c0c2834/drivers/amlogic/wifi/realtek/rtl8811AU/include/ieee80211.h build.LibreELEC-Amlogic.X8HP.arm-devel/linux-amlogic-3.10-c0c2834/drivers/amlogic/wifi/realtek/rtl8811AU/include/ieee80211.h
+--- a/drivers/amlogic/wifi/realtek/rtl8811AU/include/ieee80211.h	2015-11-01 06:12:47.000000000 -0800
+--- b/drivers/amlogic/wifi/realtek/rtl8811AU/include/ieee80211.h	2016-06-21 08:22:08.525654991 -0700
+@@ -1314,18 +1314,18 @@
+ (((Addr[2]) & 0xff) == 0xff) && (((Addr[3]) & 0xff) == 0xff) && (((Addr[4]) & 0xff) == 0xff) && \
+ (((Addr[5]) & 0xff) == 0xff))
+ #else
+-extern __inline int is_multicast_mac_addr(const u8 *addr)
++static inline int is_multicast_mac_addr(const u8 *addr)
+ {
+         return ((addr[0] != 0xff) && (0x01 & addr[0]));
+ }
+ 
+-extern __inline int is_broadcast_mac_addr(const u8 *addr)
++static inline int is_broadcast_mac_addr(const u8 *addr)
+ {
+ 	return ((addr[0] == 0xff) && (addr[1] == 0xff) && (addr[2] == 0xff) &&   \
+ 		(addr[3] == 0xff) && (addr[4] == 0xff) && (addr[5] == 0xff));
+ }
+ 
+-extern __inline int is_zero_mac_addr(const u8 *addr)
++static inline int is_zero_mac_addr(const u8 *addr)
+ {
+ 	return ((addr[0] == 0x00) && (addr[1] == 0x00) && (addr[2] == 0x00) &&   \
+ 		(addr[3] == 0x00) && (addr[4] == 0x00) && (addr[5] == 0x00));
+diff -u -x '*.c' -x '*.cmd' -x '*o' -r ../LibreELEC.tv-X8HP/build.LibreELEC-S812-surkovalex.arm-7.0-devel/linux-amlogic-3.10-c0c2834/drivers/amlogic/wifi/realtek/rtl8812AU/include/ieee80211.h build.LibreELEC-Amlogic.X8HP.arm-devel/linux-amlogic-3.10-c0c2834/drivers/amlogic/wifi/realtek/rtl8812AU/include/ieee80211.h
+--- a/drivers/amlogic/wifi/realtek/rtl8812AU/include/ieee80211.h	2015-11-01 06:12:47.000000000 -0800
+--- b/drivers/amlogic/wifi/realtek/rtl8812AU/include/ieee80211.h	2016-06-21 08:23:23.217236838 -0700
+@@ -1314,18 +1314,18 @@
+ (((Addr[2]) & 0xff) == 0xff) && (((Addr[3]) & 0xff) == 0xff) && (((Addr[4]) & 0xff) == 0xff) && \
+ (((Addr[5]) & 0xff) == 0xff))
+ #else
+-extern __inline int is_multicast_mac_addr(const u8 *addr)
++static inline int is_multicast_mac_addr(const u8 *addr)
+ {
+         return ((addr[0] != 0xff) && (0x01 & addr[0]));
+ }
+ 
+-extern __inline int is_broadcast_mac_addr(const u8 *addr)
++static inline int is_broadcast_mac_addr(const u8 *addr)
+ {
+ 	return ((addr[0] == 0xff) && (addr[1] == 0xff) && (addr[2] == 0xff) &&   \
+ 		(addr[3] == 0xff) && (addr[4] == 0xff) && (addr[5] == 0xff));
+ }
+ 
+-extern __inline int is_zero_mac_addr(const u8 *addr)
++static inline int is_zero_mac_addr(const u8 *addr)
+ {
+ 	return ((addr[0] == 0x00) && (addr[1] == 0x00) && (addr[2] == 0x00) &&   \
+ 		(addr[3] == 0x00) && (addr[4] == 0x00) && (addr[5] == 0x00));
+diff -u -x '*.c' -x '*.cmd' -x '*o' -r ../LibreELEC.tv-X8HP/build.LibreELEC-S812-surkovalex.arm-7.0-devel/linux-amlogic-3.10-c0c2834/drivers/amlogic/wifi/realtek/rtl8xxx_CU/include/ieee80211.h build.LibreELEC-Amlogic.X8HP.arm-devel/linux-amlogic-3.10-c0c2834/drivers/amlogic/wifi/realtek/rtl8xxx_CU/include/ieee80211.h
+--- a/drivers/amlogic/wifi/realtek/rtl8xxx_CU/include/ieee80211.h	2015-11-01 06:12:47.000000000 -0800
+--- b/drivers/amlogic/wifi/realtek/rtl8xxx_CU/include/ieee80211.h	2016-06-21 08:23:13.849289311 -0700
+@@ -1195,18 +1195,18 @@
+ (((Addr[2]) & 0xff) == 0xff) && (((Addr[3]) & 0xff) == 0xff) && (((Addr[4]) & 0xff) == 0xff) && \
+ (((Addr[5]) & 0xff) == 0xff))
+ #else
+-extern __inline int is_multicast_mac_addr(const u8 *addr)
++static inline int is_multicast_mac_addr(const u8 *addr)
+ {
+         return ((addr[0] != 0xff) && (0x01 & addr[0]));
+ }
+ 
+-extern __inline int is_broadcast_mac_addr(const u8 *addr)
++static inline int is_broadcast_mac_addr(const u8 *addr)
+ {
+ 	return ((addr[0] == 0xff) && (addr[1] == 0xff) && (addr[2] == 0xff) &&   \
+ 		(addr[3] == 0xff) && (addr[4] == 0xff) && (addr[5] == 0xff));
+ }
+ 
+-extern __inline int is_zero_mac_addr(const u8 *addr)
++static inline int is_zero_mac_addr(const u8 *addr)
+ {
+ 	return ((addr[0] == 0x00) && (addr[1] == 0x00) && (addr[2] == 0x00) &&   \
+ 		(addr[3] == 0x00) && (addr[4] == 0x00) && (addr[5] == 0x00));
+diff -u -x '*.c' -x '*.cmd' -x '*o' -r ../LibreELEC.tv-X8HP/build.LibreELEC-S812-surkovalex.arm-7.0-devel/linux-amlogic-3.10-c0c2834/drivers/amlogic/wifi/realtek/rtl8xxx_DU/include/ieee80211.h build.LibreELEC-Amlogic.X8HP.arm-devel/linux-amlogic-3.10-c0c2834/drivers/amlogic/wifi/realtek/rtl8xxx_DU/include/ieee80211.h
+--- a/drivers/amlogic/wifi/realtek/rtl8xxx_DU/include/ieee80211.h	2015-11-01 06:12:47.000000000 -0800
+--- b/drivers/amlogic/wifi/realtek/rtl8xxx_DU/include/ieee80211.h	2016-06-21 08:21:17.489940429 -0700
+@@ -1195,18 +1195,18 @@
+ (((Addr[2]) & 0xff) == 0xff) && (((Addr[3]) & 0xff) == 0xff) && (((Addr[4]) & 0xff) == 0xff) && \
+ (((Addr[5]) & 0xff) == 0xff))
+ #else
+-extern __inline int is_multicast_mac_addr(const u8 *addr)
++static inline int is_multicast_mac_addr(const u8 *addr)
+ {
+         return ((addr[0] != 0xff) && (0x01 & addr[0]));
+ }
+ 
+-extern __inline int is_broadcast_mac_addr(const u8 *addr)
++static inline int is_broadcast_mac_addr(const u8 *addr)
+ {
+ 	return ((addr[0] == 0xff) && (addr[1] == 0xff) && (addr[2] == 0xff) &&   \
+ 		(addr[3] == 0xff) && (addr[4] == 0xff) && (addr[5] == 0xff));
+ }
+ 
+-extern __inline int is_zero_mac_addr(const u8 *addr)
++static inline int is_zero_mac_addr(const u8 *addr)
+ {
+ 	return ((addr[0] == 0x00) && (addr[1] == 0x00) && (addr[2] == 0x00) &&   \
+ 		(addr[3] == 0x00) && (addr[4] == 0x00) && (addr[5] == 0x00));
+diff -u -x '*.c' -x '*.cmd' -x '*o' -r ../LibreELEC.tv-X8HP/build.LibreELEC-S812-surkovalex.arm-7.0-devel/linux-amlogic-3.10-c0c2834/drivers/amlogic/wifi/realtek/rtl8xxx_EU/include/ieee80211.h build.LibreELEC-Amlogic.X8HP.arm-devel/linux-amlogic-3.10-c0c2834/drivers/amlogic/wifi/realtek/rtl8xxx_EU/include/ieee80211.h
+--- a/drivers/amlogic/wifi/realtek/rtl8xxx_EU/include/ieee80211.h	2016-06-19 11:16:33.616779317 -0700
+--- b/drivers/amlogic/wifi/realtek/rtl8xxx_EU/include/ieee80211.h	2016-06-21 08:21:37.769827033 -0700
+@@ -1314,18 +1314,18 @@
+ (((Addr[2]) & 0xff) == 0xff) && (((Addr[3]) & 0xff) == 0xff) && (((Addr[4]) & 0xff) == 0xff) && \
+ (((Addr[5]) & 0xff) == 0xff))
+ #else
+-extern __inline int is_multicast_mac_addr(const u8 *addr)
++static inline int is_multicast_mac_addr(const u8 *addr)
+ {
+         return ((addr[0] != 0xff) && (0x01 & addr[0]));
+ }
+ 
+-extern __inline int is_broadcast_mac_addr(const u8 *addr)
++static inline int is_broadcast_mac_addr(const u8 *addr)
+ {
+ 	return ((addr[0] == 0xff) && (addr[1] == 0xff) && (addr[2] == 0xff) &&   \
+ 		(addr[3] == 0xff) && (addr[4] == 0xff) && (addr[5] == 0xff));
+ }
+ 
+-extern __inline int is_zero_mac_addr(const u8 *addr)
++static inline int is_zero_mac_addr(const u8 *addr)
+ {
+ 	return ((addr[0] == 0x00) && (addr[1] == 0x00) && (addr[2] == 0x00) &&   \
+ 		(addr[3] == 0x00) && (addr[4] == 0x00) && (addr[5] == 0x00));
+diff -u -x '*.c' -x '*.cmd' -x '*o' -r ../LibreELEC.tv-X8HP/build.LibreELEC-S812-surkovalex.arm-7.0-devel/linux-amlogic-3.10-c0c2834/drivers/amlogic/wifi/realtek/rtl8xxx_EU_MP/include/ieee80211.h build.LibreELEC-Amlogic.X8HP.arm-devel/linux-amlogic-3.10-c0c2834/drivers/amlogic/wifi/realtek/rtl8xxx_EU_MP/include/ieee80211.h
+--- a/drivers/amlogic/wifi/realtek/rtl8xxx_EU_MP/include/ieee80211.h	2016-06-19 11:16:33.616779317 -0700
+--- b/drivers/amlogic/wifi/realtek/rtl8xxx_EU_MP/include/ieee80211.h	2016-06-21 08:22:50.429420457 -0700
+@@ -1191,12 +1191,12 @@
+ (((Addr[2]) & 0xff) == 0xff) && (((Addr[3]) & 0xff) == 0xff) && (((Addr[4]) & 0xff) == 0xff) && \
+ (((Addr[5]) & 0xff) == 0xff))
+ #else
+-extern __inline int is_multicast_mac_addr(const u8 *addr)
++static inline int is_multicast_mac_addr(const u8 *addr)
+ {
+         return ((addr[0] != 0xff) && (0x01 & addr[0]));
+ }
+ 
+-extern __inline int is_broadcast_mac_addr(const u8 *addr)
++static inline int is_broadcast_mac_addr(const u8 *addr)
+ {
+ 	return ((addr[0] == 0xff) && (addr[1] == 0xff) && (addr[2] == 0xff) &&   \
+ 		(addr[3] == 0xff) && (addr[4] == 0xff) && (addr[5] == 0xff));

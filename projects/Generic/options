@@ -26,8 +26,8 @@
   # Target Configfile for u-boot
     UBOOT_CONFIGFILE=""
 
-  # Kernel target
-    KERNEL_TARGET="bzImage"
+  # Kernel target for u-boot (default 'uImage' if BOOTLOADER=u-boot) (uImage / zImage)
+    KERNEL_UBOOT_TARGET=""
 
   # Kernel extra targets to build
     KERNEL_UBOOT_EXTRA_TARGET=""
@@ -81,6 +81,9 @@
 
   # KODI Player implementation to use (default / bcm2835-driver / libfslvpuwrap)
     KODIPLAYER_DRIVER="default"
+
+  # KODI DCADEC support (yes / no)
+    DCADEC_SUPPORT="yes"
 
   # Modules to install in initramfs for early boot
     INITRAMFS_MODULES=""
